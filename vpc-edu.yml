@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Create a production VPC using AWS CloudFormation.
 
 Resources:
-  productionVPC:
+  ProductionVPC:
     Type: 'AWS::EC2::VPC'
     Properties:
       CidrBlock: '10.0.0.0/16'
@@ -13,34 +13,89 @@ Resources:
         - Key: Name
           Value: productionVPC
 
-  publicSubnet:
+  PublicSubnet:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref productionVPC
-      CidrBlock: '10.0.0.1/24'
+      VpcId: !Ref ProductionVPC
+      CidrBlock: '10.0.0.0/24'
       MapPublicIpOnLaunch: true
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       Tags:
         - Key: Name
           Value: publicSubnet
 
-  privateSubnet:
+  PrivateSubnet:
     Type: 'AWS::EC2::Subnet'
     Properties:
-      VpcId: !Ref productionVPC
+      VpcId: !Ref ProductionVPC
       CidrBlock: '10.0.1.0/24'
       AvailabilityZone: !Select [ 0, !GetAZs '' ]
       Tags:
         - Key: Name
           Value: privateSubnet
 
-  MyEC2Instance:
+  EC2Instance:
     Type: 'AWS::EC2::Instance'
     Properties: 
       InstanceType: t2.micro
       ImageId: ami-012967cc5a8c9f891
       KeyName: generate-key
-      SubnetId: !Ref publicSubnet
+      SubnetId: !Ref PublicSubnet
       Tags:
         - Key: Name
           Value: vpc-edu-ec2-instance
+
+  # Create an Internet Gateway
+  InternetGateway:
+    Type: 'AWS::EC2::InternetGateway'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: prod-igw
+
+  # Attach Internet Gateway to the VPC
+  VPCGatewayAttachment:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Properties:
+      VpcId: !Ref ProductionVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Create a Route Table for Public Access
+  PublicRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ProductionVPC
+      Tags:
+        - Key: Name
+          Value: public-rt
+
+  # Add Route for Internet Access in Public Route Table
+  PublicRoute:
+    Type: 'AWS::EC2::Route'
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: '0.0.0.0/0'
+      GatewayId: !Ref InternetGateway
+
+  # Associate the Public Subnet with the Public Route Table
+  SubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Create a Route Table for Private Access
+  PrivateRouteTable:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ProductionVPC
+      Tags:
+        - Key: Name
+          Value: private-rt
+
+  # Associate the Public Subnet with the Public Route Table
+  SubnetRouteTableAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
