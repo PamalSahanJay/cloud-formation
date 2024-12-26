@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Create a production VPC using AWS CloudFormation.
+
+Resources:
+  productionVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      CidrBlock: '10.0.0.0/16'
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: productionVPC
+
+  publicSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref productionVPC
+      CidrBlock: '10.0.0.1/24'
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: publicSubnet
+
+  privateSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref productionVPC
+      CidrBlock: '10.0.1.0/24'
+      AvailabilityZone: !Select [ 0, !GetAZs '' ]
+      Tags:
+        - Key: Name
+          Value: privateSubnet
+
+  MyEC2Instance:
+    Type: 'AWS::EC2::Instance'
+    Properties: 
+      InstanceType: t2.micro
+      ImageId: ami-012967cc5a8c9f891
+      KeyName: generate-key
+      SubnetId: !Ref publicSubnet
+      Tags:
+        - Key: Name
+          Value: vpc-edu-ec2-instance
