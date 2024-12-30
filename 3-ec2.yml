@@ -1,0 +1,72 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation template to create two EC2 instances.
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: VPCForBastion
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value: PublicSubnet
+
+  # PrivateSubnet:
+  #   Type: AWS::EC2::Subnet
+  #   Properties:
+  #     VpcId: !Ref VPC
+  #     CidrBlock: 10.0.2.0/24
+  #     MapPublicIpOnLaunch: false
+  #     Tags:
+  #       - Key: Name
+  #         Value: PrivateSubnet
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Allow SSH access
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  # First EC2 Instance
+  EC2Instance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      InstanceType: t2.micro
+      ImageId: ami-01816d07b1128cd2d # Amazon Linux 2 AMI (Update this for your region)
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      KeyName: cloud-formation # Replace with your key pair name
+      Tags:
+        - Key: Name
+          Value: EC2Instance1
+
+  # Second EC2 Instance
+  EC2Instance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      InstanceType: t2.micro
+      ImageId: ami-01816d07b1128cd2d # Amazon Linux 2 AMI (Update this for your region)
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      KeyName: cloud-formation # Replace with your key pair name
+      Tags:
+        - Key: Name
+          Value: EC2Instance2
