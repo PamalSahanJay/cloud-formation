@@ -22,15 +22,15 @@ Resources:
         - Key: Name
           Value: PublicSubnet
 
-  # PrivateSubnet:
-  #   Type: AWS::EC2::Subnet
-  #   Properties:
-  #     VpcId: !Ref VPC
-  #     CidrBlock: 10.0.2.0/24
-  #     MapPublicIpOnLaunch: false
-  #     Tags:
-  #       - Key: Name
-  #         Value: PrivateSubnet
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+      Tags:
+        - Key: Name
+          Value: PrivateSubnet
 
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -61,11 +61,9 @@ Resources:
   EC2Instance2:
     Type: AWS::EC2::Instance
     Properties:
-      SubnetId: !Ref PublicSubnet
+      SubnetId: !Ref PrivateSubnet
       InstanceType: t2.micro
       ImageId: ami-01816d07b1128cd2d # Amazon Linux 2 AMI (Update this for your region)
-      SecurityGroupIds:
-        - !Ref EC2SecurityGroup
       KeyName: cloud-formation # Replace with your key pair name
       Tags:
         - Key: Name
