@@ -12,6 +12,17 @@ Resources:
         - Key: Name
           Value: VPCForBastion
 
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH to Bastion Host
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
   InternetGateway:
     Type: AWS::EC2::InternetGateway
 
@@ -28,12 +39,16 @@ Resources:
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
 
-  PrivateSubnet:
-    Type: AWS::EC2::Subnet
+  EIP:
+    Type: AWS::EC2::EIP
     Properties:
-      VpcId: !Ref VPC
-      CidrBlock: 10.0.2.0/24
-      MapPublicIpOnLaunch: false
+      Domain: vpc
+
+  NATGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      AllocationId: !GetAtt EIP.AllocationId
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
@@ -53,16 +68,27 @@ Resources:
       SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
 
-  BastionSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
     Properties:
-      GroupDescription: Allow SSH to Bastion Host
       VpcId: !Ref VPC
-      SecurityGroupIngress:
-        - IpProtocol: tcp
-          FromPort: 22
-          ToPort: 22
-          CidrIp: 0.0.0.0/0
+      CidrBlock: 10.0.2.0/24
+      MapPublicIpOnLaunch: false
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags:
+        - Key: Name
+          Value: PrivateRouteTable
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NATGateway
 
   PrivateInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup

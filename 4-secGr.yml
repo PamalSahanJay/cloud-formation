@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Deploy a Bastion Host and Private EC2 Instance in a VPC
+
+Resources:
+  BastionSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PublicInstanceSG
+      GroupDescription: Allow SSH to Bastion Host
+      VpcId: vpc-059c29d2d7fd3dfe2
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+  PrivateInstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: PrivateInstanceSG
+      GroupDescription: Allow SSH from Bastion Host
+      VpcId: vpc-059c29d2d7fd3dfe2
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          SourceSecurityGroupId: !Ref BastionSecurityGroup
+
