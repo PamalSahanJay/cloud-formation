@@ -31,6 +31,7 @@ Resources:
     Properties:
       VpcId: !Ref VPC
       InternetGatewayId: !Ref InternetGateway
+    DependsOn: InternetGateway
   
   PublicSubnet:
     Type: AWS::EC2::Subnet
@@ -38,6 +39,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: 10.0.1.0/24
       MapPublicIpOnLaunch: true
+    DependsOn: VPC
 
   EIP:
     Type: AWS::EC2::EIP
@@ -49,11 +51,13 @@ Resources:
     Properties:
       SubnetId: !Ref PublicSubnet
       AllocationId: !GetAtt EIP.AllocationId
+    DependsOn: EIP
 
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref VPC
+    DependsOn: VPC
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -61,12 +65,14 @@ Resources:
       RouteTableId: !Ref PublicRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       GatewayId: !Ref InternetGateway
+    DependsOn: InternetGateway
 
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
       SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
+    DependsOn: PublicSubnet
 
   PrivateSubnet:
     Type: AWS::EC2::Subnet
@@ -74,6 +80,7 @@ Resources:
       VpcId: !Ref VPC
       CidrBlock: 10.0.2.0/24
       MapPublicIpOnLaunch: false
+    DependsOn: PublicSubnet
 
   PrivateRouteTable:
     Type: AWS::EC2::RouteTable
@@ -82,6 +89,7 @@ Resources:
       Tags:
         - Key: Name
           Value: PrivateRouteTable
+    DependsOn: PublicRouteTable
 
   PrivateRoute:
     Type: AWS::EC2::Route
@@ -89,6 +97,14 @@ Resources:
       RouteTableId: !Ref PrivateRouteTable
       DestinationCidrBlock: 0.0.0.0/0
       NatGatewayId: !Ref NATGateway
+    DependsOn: NATGateway
+  
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PrivateSubnet
+      RouteTableId: !Ref PrivateRouteTable
+    DependsOn: PrivateSubnet
 
   PrivateInstanceSecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -100,11 +116,12 @@ Resources:
           FromPort: 22
           ToPort: 22
           SourceSecurityGroupId: !Ref BastionSecurityGroup
+    DependsOn: BastionSecurityGroup
 
   BastionHostInstance:
     Type: AWS::EC2::Instance
     Properties:
-      InstanceType: t2.nano
+      InstanceType: t3.nano
       KeyName: cloud-formation
       SecurityGroupIds:
         - !Ref BastionSecurityGroup
@@ -126,3 +143,4 @@ Resources:
       Tags:
         - Key: Name
           Value: PrivateInstance
+    DependsOn: BastionHostInstance
